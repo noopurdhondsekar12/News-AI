@@ -18,101 +18,84 @@ This intensive 5-day sprint successfully delivered a complete AI-powered news pr
 
 ### System Architecture Diagram
 
-```
-================================================================================
-                    NEWS AI BACKEND + RL AUTOMATION ARCHITECTURE
-================================================================================
+```mermaid
+graph TB
+    subgraph "EXTERNAL SYSTEMS"
+        A[News Sources<br/>URLs/APIs<br/>RSS Feeds]
+        B[Uniguru AI<br/>Classification<br/>Sentiment<br/>Summarization]
+        C[BHIV Core<br/>TTV/Vaani<br/>Push API<br/>WebSocket]
+    end
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           EXTERNAL SYSTEMS                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │   News Sources  │    │   Uniguru AI    │    │   BHIV Core     │         │
-│  │   (URLs/APIs)   │    │   Services      │    │   (TTV/Vaani)   │         │
-│  │                 │    │ • Classification│    │ • Push API      │         │
-│  │ • RSS Feeds     │    │ • Sentiment     │    │ • WebSocket     │         │
-│  │ • News APIs     │    │ • Summarization │    │ • Orchestration │         │
-│  │ • Web Scraping  │    │ • AI Models     │    │ • Seeya JSON    │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FASTAPI BACKEND                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │   API Layer     │    │  Core Services  │    │   Database      │         │
-│  │   (30+ Routes)  │    │                 │    │   Layer         │         │
-│  │                 │    │ • Auth/Middleware│    │                 │         │
-│  │ • REST Endpoints│    │ • Error Handling│    │ • MongoDB Atlas │         │
-│  │ • WebSocket     │    │ • Logging       │    │ • Async Ops     │         │
-│  │ • Health Checks │    │ • Validation    │    │ • Indexing      │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        MCP AGENT REGISTRY                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │  Fetch Agent    │    │  Filter Agent   │    │  Verify Agent   │         │
-│  │                 │    │                 │    │                 │         │
-│  │ • Web Scraping  │    │ • Relevance     │    │ • Authenticity  │         │
-│  │ • Content Ext.  │    │ • Quality Score │    │ • Fact Checking │         │
-│  │ • Metadata      │    │ • Filtering     │    │ • Bias Detection│         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐                                │
-│  │  Script Agent   │    │ RL Feedback     │                                │
-│  │                 │    │ Agent           │                                │
-│  │ • Video Prompts │    │                 │                                │
-│  │ • Content Adapt │    │ • Reward Score  │                                │
-│  │ • Script Gen    │    │ • Auto-Correct  │                                │
-│  └─────────────────┘    └─────────────────┘                                │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      LANGGRAPH AUTOMATOR PIPELINE                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐ ──▶ ┌─────────────┐ ──▶ ┌─────────────┐ ──▶ ┌─────────────┐ │
-│  │   START     │    │   FETCH      │    │   FILTER     │    │   VERIFY     │ │
-│  │             │    │   CONTENT    │    │   CONTENT    │    │   CONTENT    │ │
-│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
-│          │                │                     │                │          │
-│          ▼                ▼                     ▼                ▼          │
-│  ┌─────────────┐ ◀─ ┌─────────────┐ ◀─ ┌─────────────┐ ◀─ ┌─────────────┐ │
-│  │   SCRIPT    │    │   FEEDBACK   │    │  CORRECTION │    │  COMPLETED   │ │
-│  │   GENERATE  │    │   ANALYSIS   │    │   (Retry)   │    │   OUTPUT     │ │
-│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        REINFORCEMENT LEARNING                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │  Reward Function│    │ Auto-Correction │    │  Metrics &     │         │
-│  │                 │    │                 │    │  Analytics     │         │
-│  │ • Tone (30%)    │    │ • Threshold <0.6│    │                 │         │
-│  │ • Engagement(40%)│    │ • Re-summarize │    │ • Performance   │         │
-│  │ • Quality (30%) │    │ • Improve Script│    │ • Success Rates │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          OUTPUT & DELIVERY                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │  Structured     │    │   BHIV Push    │    │  WebSocket      │         │
-│  │  JSON Output    │    │   API          │    │  Streaming      │         │
-│  │                 │    │                 │    │                 │         │
-│  │ • News Content  │    │ • Channel/Avatar│    │ • Real-time     │         │
-│  │ • Metadata      │    │ • 3x3 Matrix    │    │ • Live Updates  │         │
-│  │ • Video Scripts │    │ • Seeya Format │    │ • Progress      │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
+    subgraph "FASTAPI BACKEND"
+        D[API Layer<br/>30+ Routes<br/>REST/WebSocket]
+        E[Core Services<br/>Auth/Middleware<br/>Error Handling]
+        F[MongoDB Atlas<br/>Async Operations<br/>Indexing]
+    end
+
+    subgraph "MCP AGENT REGISTRY"
+        G[Fetch Agent<br/>Web Scraping<br/>Content Extraction]
+        H[Filter Agent<br/>Relevance Scoring<br/>Quality Filtering]
+        I[Verify Agent<br/>Authenticity<br/>Fact Checking]
+        J[Script Agent<br/>Video Prompts<br/>Content Adaptation]
+        K[RL Feedback Agent<br/>Reward Scoring<br/>Auto-Correction]
+    end
+
+    subgraph "LANGGRAPH AUTOMATOR"
+        L[START<br/>Input Processing]
+        M[FETCH<br/>Content Retrieval]
+        N[FILTER<br/>Quality Validation]
+        O[VERIFY<br/>Authenticity Check]
+        P[SCRIPT<br/>Prompt Generation]
+        Q[FEEDBACK<br/>RL Analysis]
+        R[CORRECTION<br/>Auto-Improvement]
+        S[COMPLETED<br/>Final Output]
+    end
+
+    subgraph "REINFORCEMENT LEARNING"
+        T[Reward Function<br/>Tone (30%)<br/>Engagement (40%)<br/>Quality (30%)]
+        U[Auto-Correction<br/>Threshold <0.6<br/>Re-summarize<br/>Improve Script]
+        V[Metrics & Analytics<br/>Performance Tracking<br/>Success Rates]
+    end
+
+    subgraph "OUTPUT & DELIVERY"
+        W[Structured JSON<br/>News Content<br/>Metadata<br/>Video Scripts]
+        X[BHIV Push API<br/>Channel/Avatar<br/>3x3 Matrix]
+        Y[WebSocket Streaming<br/>Real-time Updates<br/>Progress Monitoring]
+    end
+
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    L --> M
+    M --> N
+    N --> O
+    O --> P
+    P --> Q
+    Q --> R
+    R --> S
+    S --> T
+    T --> U
+    U --> V
+    V --> W
+    W --> X
+    X --> Y
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style G fill:#fce4ec
+    style L fill:#f1f8e9
+    style T fill:#e3f2fd
+    style W fill:#fff8e1
 ```
 
 ### Data Flow Pipeline
@@ -151,7 +134,7 @@ news/
 │   ├── main.py                    # Application entry point
 │   └── requirements.txt           # Python dependencies
 ├── docs/                          # Documentation
-│   ├── architecture_diagram.png   # Visual system architecture
+│   ├── architecture_diagram.txt   # Visual system architecture
 │   └── api_documentation.md       # API endpoint specs
 ├── README.md                      # This file
 ├── integration_diagram.md         # Text-based architecture
@@ -170,39 +153,39 @@ news/
 ### Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/noopurdhondsekar12/News-AI.git
-   cd News-AI/news
-   ```
+    ```bash
+    git clone https://github.com/noopurdhondsekar12/News-AI.git
+    cd News-AI/news
+    ```
 
 2. **Install dependencies**
-   ```bash
-   pip install -r unified_tools_backend/requirements.txt
-   ```
+    ```bash
+    pip install -r unified_tools_backend/requirements.txt
+    ```
 
 3. **Set environment variables**
-   ```bash
-   # MongoDB Atlas
-   export MONGODB_URL="your_mongodb_atlas_connection_string"
+    ```bash
+    # MongoDB Atlas
+    export MONGODB_URL="your_mongodb_atlas_connection_string"
 
-   # Uniguru AI
-   export UNIGURU_API_KEY="your_uniguru_api_key"
-   export UNIGURU_BASE_URL="https://api.uniguru.com"
+    # Uniguru AI
+    export UNIGURU_API_KEY="your_uniguru_api_key"
+    export UNIGURU_BASE_URL="https://api.uniguru.com"
 
-   # BHIV Core (optional)
-   export BHIV_CORE_URL="http://localhost:8080"
-   export BHIV_API_KEY="your_bhiv_api_key"
+    # BHIV Core (optional)
+    export BHIV_CORE_URL="http://localhost:8080"
+    export BHIV_API_KEY="your_bhiv_api_key"
 
-   # Optional AI Services
-   export GROK_API_KEY="your_grok_key"
-   export OLLAMA_BASE_URL="http://localhost:11434"
-   ```
+    # Optional AI Services
+    export GROK_API_KEY="your_grok_key"
+    export OLLAMA_BASE_URL="http://localhost:11434"
+    ```
 
 4. **Run the application**
-   ```bash
-   cd unified_tools_backend
-   python main.py
-   ```
+    ```bash
+    cd unified_tools_backend
+    python main.py
+    ```
 
 The API will be available at `http://localhost:8000` and WebSocket at `ws://localhost:8765`.
 
@@ -272,72 +255,6 @@ The API will be available at `http://localhost:8000` and WebSocket at `ws://loca
 - Event-driven architecture
 
 **Output Format**: Standardized JSON structure for orchestration layer
-
-## 🧪 Testing & Validation
-
-### Run Complete Test Suite
-```bash
-# Day 5 comprehensive testing (3×3 matrix, latency, error recovery)
-python unified_tools_backend/tests/test_sprint_complete.py
-
-# Legacy test suite
-python unified_tools_backend/test_full_flow.py
-```
-
-### Test Coverage
-- ✅ **Health Check**: System status validation
-- ✅ **Sample Validation**: 5 news items processing verification
-- ✅ **Agent Registry**: All 5 MCP agents confirmed operational
-- ✅ **RL Feedback**: Reward scoring and auto-correction validated
-- ✅ **LangGraph Pipeline**: Complete workflow execution tested
-- ✅ **BHIV Integration**: Push API and WebSocket streaming verified
-- ✅ **3×3 Matrix**: All 9 channel-avatar combinations tested
-- ✅ **Performance**: <5s average latency, P95 <8s confirmed
-- ✅ **Error Recovery**: 70%+ error handling rate achieved
-- ✅ **Database**: Async operations with proper indexing validated
-
-## 📊 Performance Metrics
-
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| Processing Latency | <5s | 2.3s avg | ✅ |
-| Success Rate | >95% | 97.2% | ✅ |
-| RL Improvement | +40% | +42% | ✅ |
-| Error Recovery | >70% | 78% | ✅ |
-| Concurrent Users | 100+ | 150+ | ✅ |
-| Uptime | 99.9% | 99.95% | ✅ |
-
-## 📋 API Endpoints
-
-### Core Processing
-- `GET /` - System overview and health
-- `POST /api/process-news` - Complete news processing pipeline
-- `POST /api/automator/process` - LangGraph automation execution
-
-### Agent System
-- `GET /api/agents` - List all MCP agents (5 agents)
-- `POST /api/agents/{agent_id}/task` - Submit task to specific agent
-- `GET /api/tasks/{task_id}` - Get task status and results
-
-### RL Feedback
-- `POST /api/rl/feedback` - Calculate reward scores
-- `GET /api/rl/metrics` - Get feedback analytics
-
-### Uniguru AI
-- `POST /api/uniguru/classify` - Text classification
-- `POST /api/uniguru/sentiment` - Sentiment analysis
-- `POST /api/uniguru/summarize` - Text summarization
-
-### BHIV Integration
-- `POST /api/bhiv/push` - Push to single channel/avatar
-- `POST /api/bhiv/matrix-push` - 3×3 matrix push testing
-- `GET /api/bhiv/status` - BHIV connectivity check
-- `GET /api/bhiv/history` - Push history
-
-### Database & Monitoring
-- `GET /api/news` - Retrieve news items
-- `GET /api/health` - Comprehensive health check
-- `GET /api/websocket/stats` - WebSocket statistics
 
 ## 📊 Sample Outputs & Enterprise Integration
 
@@ -468,6 +385,72 @@ python unified_tools_backend/test_full_flow.py
 }
 ```
 
+## 🧪 Testing & Validation
+
+### Run Complete Test Suite
+```bash
+# Day 5 comprehensive testing (3×3 matrix, latency, error recovery)
+python unified_tools_backend/tests/test_sprint_complete.py
+
+# Legacy test suite
+python unified_tools_backend/test_full_flow.py
+```
+
+### Test Coverage
+- ✅ **Health Check**: System status validation
+- ✅ **Sample Validation**: 5 news items processing verification
+- ✅ **Agent Registry**: All 5 MCP agents confirmed operational
+- ✅ **RL Feedback**: Reward scoring and auto-correction validated
+- ✅ **LangGraph Pipeline**: Complete workflow execution tested
+- ✅ **BHIV Integration**: Push API and WebSocket streaming verified
+- ✅ **3×3 Matrix**: All 9 channel-avatar combinations tested
+- ✅ **Performance**: <5s average latency, P95 <8s confirmed
+- ✅ **Error Recovery**: 70%+ error handling rate achieved
+- ✅ **Database**: Async operations with proper indexing validated
+
+## 📊 Performance Metrics
+
+| Metric | Target | Achieved | Status |
+|--------|--------|----------|--------|
+| Processing Latency | <5s | 2.3s avg | ✅ |
+| Success Rate | >95% | 97.2% | ✅ |
+| RL Improvement | +40% | +42% | ✅ |
+| Error Recovery | >70% | 78% | ✅ |
+| Concurrent Users | 100+ | 150+ | ✅ |
+| Uptime | 99.9% | 99.95% | ✅ |
+
+## 📋 API Endpoints
+
+### Core Processing
+- `GET /` - System overview and health
+- `POST /api/process-news` - Complete news processing pipeline
+- `POST /api/automator/process` - LangGraph automation execution
+
+### Agent System
+- `GET /api/agents` - List all MCP agents (5 agents)
+- `POST /api/agents/{agent_id}/task` - Submit task to specific agent
+- `GET /api/tasks/{task_id}` - Get task status and results
+
+### RL Feedback
+- `POST /api/rl/feedback` - Calculate reward scores
+- `GET /api/rl/metrics` - Get feedback analytics
+
+### Uniguru AI
+- `POST /api/uniguru/classify` - Text classification
+- `POST /api/uniguru/sentiment` - Sentiment analysis
+- `POST /api/uniguru/summarize` - Text summarization
+
+### BHIV Integration
+- `POST /api/bhiv/push` - Push to single channel/avatar
+- `POST /api/bhiv/matrix-push` - 3×3 matrix push testing
+- `GET /api/bhiv/status` - BHIV connectivity check
+- `GET /api/bhiv/history` - Push history
+
+### Database & Monitoring
+- `GET /api/news` - Retrieve news items
+- `GET /api/health` - Comprehensive health check
+- `GET /api/websocket/stats` - WebSocket statistics
+
 ## 🎯 Sprint Achievements
 
 ### ✅ Day 1: System Setup + Uniguru Connect
@@ -506,7 +489,7 @@ python unified_tools_backend/test_full_flow.py
 
 ## 📚 Documentation
 
-- **[Integration Diagram](docs/architecture_diagram.png)** - Visual system architecture
+- **[Integration Diagram](docs/architecture_diagram.txt)** - Visual system architecture
 - **[Sprint Reflection](SPRINT_REFLECTION.md)** - Development insights and learnings
 - **[API Documentation](docs/api_documentation.md)** - Detailed endpoint specifications
 - **[Deployment Guide](docs/deployment.md)** - Production deployment instructions
