@@ -20,8 +20,8 @@ from urllib.parse import urlparse, parse_qs
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
 import websockets
-from langgraph import StateGraph, END
-from langchain.schema import BaseMessage
+# from langgraph import StateGraph, END  # Commented out due to version compatibility
+# from langchain.schema import BaseMessage
 from typing import TypedDict, Annotated
 import operator
 
@@ -5553,70 +5553,68 @@ class WebSocketManager:
                 return_exceptions=True
             )
 
-# LangGraph News Processing Automator
-class NewsProcessingAutomator:
-    def __init__(self):
-        self.workflow = self._build_workflow()
-
-    def _build_workflow(self) -> StateGraph:
-        """Build the LangGraph workflow for news processing"""
-        workflow = StateGraph(NewsProcessingState)
-
-        # Define nodes
-        workflow.add_node("fetch_content", self._fetch_content)
-        workflow.add_node("verify_content", self._verify_content)
-        workflow.add_node("generate_script", self._generate_script)
-        workflow.add_node("rl_feedback", self._rl_feedback)
-        workflow.add_node("retry_processing", self._retry_processing)
-
-        # Define edges
-        workflow.set_entry_point("fetch_content")
-
-        # Normal flow
-        workflow.add_edge("fetch_content", "verify_content")
-        workflow.add_edge("verify_content", "generate_script")
-        workflow.add_edge("generate_script", "rl_feedback")
-
-        # Conditional edges based on feedback
-        workflow.add_conditional_edges(
-            "rl_feedback",
-            self._should_retry,
-            {
-                True: "retry_processing",
-                False: END
-            }
-        )
-
-        workflow.add_edge("retry_processing", "generate_script")
-
-        return workflow.compile()
-
-    async def process_news(self, url: str) -> Dict[str, Any]:
-        """Process news through the automated pipeline"""
-        initial_state = NewsProcessingState(
-            url=url,
-            scraped_data=None,
-            verified_data=None,
-            script_data=None,
-            feedback_data=None,
-            final_output=None,
-            errors=[],
-            retry_count=0
-        )
-
-        try:
-            result = await self.workflow.ainvoke(initial_state)
-            return {
-                "success": len(result.get("errors", [])) == 0,
-                "data": result,
-                "processed_at": datetime.now().isoformat()
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "processed_at": datetime.now().isoformat()
-            }
+# LangGraph News Processing Automator - Commented out due to version compatibility
+# class NewsProcessingAutomator:
+#     def __init__(self):
+#         self.workflow = self._build_workflow()
+#
+#     def _build_workflow(self) -> StateGraph:
+#         """Build the LangGraph workflow for news processing"""
+#         workflow = StateGraph(NewsProcessingState)
+#
+#         # Define nodes
+#         workflow.add_node("fetch_content", self._fetch_content)
+#         workflow.add_node("verify_content", self._verify_content)
+#         workflow.add_node("generate_script", self._generate_script)
+#         workflow.add_node("rl_feedback", self._rl_feedback)
+#         workflow.add_node("retry_processing", self._retry_processing)
+#
+#         # Define edges
+#         workflow.set_entry_point("fetch_content")
+#
+#         # Normal flow
+#         workflow.add_edge("fetch_content", "verify_content")
+#         workflow.add_edge("verify_content", "generate_script")
+#         workflow.add_edge("generate_script", "rl_feedback")
+#
+#         # Conditional edges based on feedback
+#         workflow.add_conditional_edges(
+#             "rl_feedback",
+#             self._should_retry,
+#             {
+#                 True: "retry_processing",
+#                 False: END
+#             }
+#         )
+#
+#         workflow.add_edge("retry_processing", "generate_script")
+#
+#         return workflow.compile()
+#
+#     async def process_news(self, url: str) -> Dict[str, Any]:
+#         """Process news through the automated pipeline"""
+#         initial_state = NewsProcessingState(
+#             url=url,
+#             scraped_data=None,
+#             verified_data=None,
+#             script_data=None,
+#             feedback_data=None,
+#             final_output=None,
+#             errors=[],
+#             retry_count=0
+#         )
+#
+#         try:
+#             result = await self.workflow.ainvoke(initial_state)
+#             return {
+#                 "success": len(result.get("errors", [])) == 0,
+#                 "data": result,
+#             }
+#         except Exception as e:
+#             return {
+#                 "success": False,
+#                 "error": str(e),
+#             }
 
     async def _fetch_content(self, state: NewsProcessingState) -> NewsProcessingState:
         """Fetch content from URL"""
