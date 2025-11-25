@@ -16,37 +16,113 @@ This intensive 5-day sprint successfully delivered a complete AI-powered news pr
 
 ## 🏗️ Architecture Overview
 
+### System Architecture Diagram
+
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   News Sources  │───▶│  Fetch Agent    │───▶│   MongoDB Atlas │
-│   (URLs/APIs)   │    │  Web Scraping   │    │   Raw Storage   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                         │
-┌─────────────────┐    ┌─────────────────┐             ▼
-│  Uniguru AI     │◀──▶│ Filter Agent    │    ┌─────────────────┐
-│  Classification │    │ Relevance       │    │ Verified News   │
-│  Sentiment      │    └─────────────────┘    └─────────────────┘
-│  Summarization  │             │                      │
-└─────────────────┘             ▼                      ▼
-                        ┌─────────────────┐    ┌─────────────────┐
-                        │  Verify Agent   │    │  Script Agent   │
-                        │  Authenticity   │    │  Video Prompts   │
-                        └─────────────────┘    └─────────────────┘
-                                 │                      │
-                                 ▼                      ▼
-                        ┌─────────────────┐    ┌─────────────────┐
-                        │   RL Feedback   │◀──▶│ LangGraph Auto  │
-                        │   Agent         │    │  Pipeline       │
-                        │   Reward Score  │    │  State Mgmt     │
-                        └─────────────────┘    └─────────────────┘
-                                 │                      │
-                                 ▼                      ▼
-                        ┌─────────────────┐    ┌─────────────────┐
-                        │   BHIV Core     │    │  WebSocket      │
-                        │   Push API      │    │  Streaming      │
-                        │   TTV/Vaani     │    │  Real-time      │
-                        └─────────────────┘    └─────────────────┘
+================================================================================
+                    NEWS AI BACKEND + RL AUTOMATION ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           EXTERNAL SYSTEMS                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │   News Sources  │    │   Uniguru AI    │    │   BHIV Core     │         │
+│  │   (URLs/APIs)   │    │   Services      │    │   (TTV/Vaani)   │         │
+│  │                 │    │ • Classification│    │ • Push API      │         │
+│  │ • RSS Feeds     │    │ • Sentiment     │    │ • WebSocket     │         │
+│  │ • News APIs     │    │ • Summarization │    │ • Orchestration │         │
+│  │ • Web Scraping  │    │ • AI Models     │    │ • Seeya JSON    │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FASTAPI BACKEND                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │   API Layer     │    │  Core Services  │    │   Database      │         │
+│  │   (30+ Routes)  │    │                 │    │   Layer         │         │
+│  │                 │    │ • Auth/Middleware│    │                 │         │
+│  │ • REST Endpoints│    │ • Error Handling│    │ • MongoDB Atlas │         │
+│  │ • WebSocket     │    │ • Logging       │    │ • Async Ops     │         │
+│  │ • Health Checks │    │ • Validation    │    │ • Indexing      │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        MCP AGENT REGISTRY                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │  Fetch Agent    │    │  Filter Agent   │    │  Verify Agent   │         │
+│  │                 │    │                 │    │                 │         │
+│  │ • Web Scraping  │    │ • Relevance     │    │ • Authenticity  │         │
+│  │ • Content Ext.  │    │ • Quality Score │    │ • Fact Checking │         │
+│  │ • Metadata      │    │ • Filtering     │    │ • Bias Detection│         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+│                                                                             │
+│  ┌─────────────────┐    ┌─────────────────┐                                │
+│  │  Script Agent   │    │ RL Feedback     │                                │
+│  │                 │    │ Agent           │                                │
+│  │ • Video Prompts │    │                 │                                │
+│  │ • Content Adapt │    │ • Reward Score  │                                │
+│  │ • Script Gen    │    │ • Auto-Correct  │                                │
+│  └─────────────────┘    └─────────────────┘                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      LANGGRAPH AUTOMATOR PIPELINE                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ──▶ ┌─────────────┐ ──▶ ┌─────────────┐ ──▶ ┌─────────────┐ │
+│  │   START     │    │   FETCH      │    │   FILTER     │    │   VERIFY     │ │
+│  │             │    │   CONTENT    │    │   CONTENT    │    │   CONTENT    │ │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
+│          │                │                     │                │          │
+│          ▼                ▼                     ▼                ▼          │
+│  ┌─────────────┐ ◀─ ┌─────────────┐ ◀─ ┌─────────────┐ ◀─ ┌─────────────┐ │
+│  │   SCRIPT    │    │   FEEDBACK   │    │  CORRECTION │    │  COMPLETED   │ │
+│  │   GENERATE  │    │   ANALYSIS   │    │   (Retry)   │    │   OUTPUT     │ │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        REINFORCEMENT LEARNING                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │  Reward Function│    │ Auto-Correction │    │  Metrics &     │         │
+│  │                 │    │                 │    │  Analytics     │         │
+│  │ • Tone (30%)    │    │ • Threshold <0.6│    │                 │         │
+│  │ • Engagement(40%)│    │ • Re-summarize │    │ • Performance   │         │
+│  │ • Quality (30%) │    │ • Improve Script│    │ • Success Rates │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          OUTPUT & DELIVERY                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │  Structured     │    │   BHIV Push    │    │  WebSocket      │         │
+│  │  JSON Output    │    │   API          │    │  Streaming      │         │
+│  │                 │    │                 │    │                 │         │
+│  │ • News Content  │    │ • Channel/Avatar│    │ • Real-time     │         │
+│  │ • Metadata      │    │ • 3x3 Matrix    │    │ • Live Updates  │         │
+│  │ • Video Scripts │    │ • Seeya Format │    │ • Progress      │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Data Flow Pipeline
+
+1. **NEWS INGESTION**: News URL → Fetch Agent → Raw Content → MongoDB Atlas
+2. **CONTENT PROCESSING**: Raw Content → Filter Agent → Verified Content → MongoDB Atlas
+3. **AI ENHANCEMENT**: Verified Content → Uniguru AI → Enhanced Content → MongoDB Atlas
+4. **QUALITY ASSURANCE**: Enhanced Content → RL Feedback → Reward Score → Accept/Reject
+5. **OUTPUT GENERATION**: Accepted Content → Script Agent → Video Scripts → BHIV Core
+6. **REAL-TIME DELIVERY**: Video Scripts → BHIV Push API → TTV/Vaani → WebSocket Updates
 
 ## 📁 Project Structure
 
@@ -262,6 +338,135 @@ python unified_tools_backend/test_full_flow.py
 - `GET /api/news` - Retrieve news items
 - `GET /api/health` - Comprehensive health check
 - `GET /api/websocket/stats` - WebSocket statistics
+
+## 📊 Sample Outputs & Enterprise Integration
+
+### Complete News Processing Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "title": "Breaking: Major Tech Merger Announced",
+    "content": "In a stunning development, two leading technology companies announced a $50 billion merger today...",
+    "summary": "Tech giants announce historic $50B merger, reshaping industry landscape with combined AI capabilities and expanded market reach.",
+    "authenticity_score": 92,
+    "categories": ["technology", "business", "mergers"],
+    "sentiment_analysis": {
+      "sentiment": "positive",
+      "polarity": 0.75,
+      "confidence": 0.89
+    },
+    "video_script": "Breaking news: A historic $50 billion merger between two tech giants has just been announced. This groundbreaking deal combines cutting-edge AI technologies with unprecedented market reach, potentially reshaping the entire technology industry. Stay tuned for more details as this story develops.",
+    "reward_score": 0.91,
+    "processing_metrics": {
+      "total_steps": 6,
+      "retries_used": 0,
+      "processing_time": 2.1
+    }
+  },
+  "message": "News processing completed successfully",
+  "timestamp": "2025-11-25T09:00:00.000Z"
+}
+```
+
+### RL Feedback Analysis Output
+
+```json
+{
+  "success": true,
+  "data": {
+    "news_item_id": "news_001",
+    "reward_score": 0.87,
+    "tone_score": 0.92,
+    "engagement_score": 0.81,
+    "quality_score": 0.88,
+    "correction_needed": false,
+    "correction_attempts": 0,
+    "final_output": {
+      "title": "Market Analysis: Q4 Earnings Beat Expectations",
+      "content": "Major corporations exceeded analyst predictions...",
+      "script": "Market update: Q4 earnings season delivers surprises as major corporations beat expectations across multiple sectors...",
+      "authenticity_score": 89
+    },
+    "metrics": {
+      "content_length": 2150,
+      "script_length": 165,
+      "processing_timestamp": "2025-11-25T09:00:00.000Z",
+      "reward_components": {
+        "tone_weight": 0.3,
+        "engagement_weight": 0.4,
+        "quality_weight": 0.3
+      }
+    }
+  },
+  "timestamp": "2025-11-25T09:00:00.000Z"
+}
+```
+
+### BHIV Matrix Push Results
+
+```json
+{
+  "success": true,
+  "data": {
+    "matrix_push_complete": true,
+    "total_combinations": 9,
+    "successful_pushes": 9,
+    "success_rate": 1.0,
+    "results": [
+      {
+        "channel": "news_channel_1",
+        "avatar": "avatar_alice",
+        "success": true,
+        "push_id": "push_12345",
+        "timestamp": "2025-11-25T09:00:01.000Z"
+      },
+      {
+        "channel": "news_channel_1",
+        "avatar": "avatar_bob",
+        "success": true,
+        "push_id": "push_12346",
+        "timestamp": "2025-11-25T09:00:01.100Z"
+      }
+    ],
+    "completed_at": "2025-11-25T09:00:02.000Z"
+  },
+  "message": "Matrix push completed: 9/9 successful",
+  "timestamp": "2025-11-25T09:00:02.000Z"
+}
+```
+
+### System Health Check
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-25T09:00:00.000Z",
+  "services": {
+    "scraping": true,
+    "summarizing": true,
+    "vetting": true,
+    "pipeline": true,
+    "agents": {
+      "fetch_agent": "active",
+      "filter_agent": "active",
+      "verify_agent": "active",
+      "script_agent": "active",
+      "rl_feedback_agent": "active"
+    },
+    "database": "connected",
+    "bhiv_integration": "ready",
+    "websocket": "listening"
+  },
+  "performance": {
+    "uptime": "99.95%",
+    "avg_response_time": "2.3s",
+    "success_rate": "97.2%",
+    "active_connections": 23
+  }
+}
+```
 
 ## 🎯 Sprint Achievements
 
