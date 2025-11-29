@@ -5,15 +5,15 @@ from typing import List, Optional, Dict, Any
 import asyncio
 from datetime import datetime
 
-from ..core.database import db_service
-from ..services.uniguru import uniguru_service
-from ..agents.agent_registry import agent_registry
-from ..rl.feedback_service import rl_feedback_service
-from ..pipeline.automator import automator
-from ..bhiv_connector.bhiv_service import bhiv_service
-from ..unified_pipeline import unified_pipeline
-from ..scheduler import scheduler
-from ..queue_worker import background_queue
+from app.core.database import db_service
+from app.services.uniguru import uniguru_service
+from agents.agent_registry import agent_registry
+from rl.feedback_service import rl_feedback_service
+from pipeline.automator import automator
+from bhiv_connector.bhiv_service import bhiv_service
+from unified_pipeline import unified_pipeline
+from scheduler import scheduler
+from queue_worker import background_queue
 
 # Pydantic models
 class NewsProcessingRequest(BaseModel):

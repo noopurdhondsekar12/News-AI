@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import asyncio
-from ..app.core.database import db_service
-from ..app.services.uniguru import uniguru_service
+from app.core.database import db_service
+from app.services.uniguru import uniguru_service
 
 class BaseAgent:
     def __init__(self, agent_id: str, name: str, role: str, capabilities: List[str], priority: int = 1):

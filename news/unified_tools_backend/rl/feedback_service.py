@@ -4,9 +4,9 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from ..app.core.database import db_service
-from ..app.services.uniguru import uniguru_service
-from ..agents.agent_registry import agent_registry
+from app.core.database import db_service
+from app.services.uniguru import uniguru_service
+from agents.agent_registry import agent_registry
 
 class RLFeedbackService:
     def __init__(self):

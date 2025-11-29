@@ -3,10 +3,10 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import asyncio
 import logging
-from .pipeline.automator import automator
-from .bhiv_connector.bhiv_service import bhiv_service
-from .rl.feedback_service import rl_feedback_service
-from .app.services.uniguru import uniguru_service
+from pipeline.automator import automator
+from bhiv_connector.bhiv_service import bhiv_service
+from rl.feedback_service import rl_feedback_service
+from app.services.uniguru import uniguru_service
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from enum import Enum
 import heapq
 from dataclasses import dataclass, field
 
-from .unified_pipeline import unified_pipeline
+from unified_pipeline import unified_pipeline
 
 logger = logging.getLogger(__name__)
 

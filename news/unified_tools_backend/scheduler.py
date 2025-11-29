@@ -8,8 +8,8 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.executors.asyncio import AsyncIOExecutor
 
-from .unified_pipeline import unified_pipeline
-from .queue_worker import background_queue
+from unified_pipeline import unified_pipeline
+from queue_worker import background_queue
 
 logger = logging.getLogger(__name__)
 

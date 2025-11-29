@@ -20,7 +20,7 @@ class DatabaseService:
             await self.client.admin.command('ping')
             print("✅ MongoDB connection established")
             return True
-        except ConnectionFailure as e:
+        except Exception as e:
             print(f"❌ MongoDB connection failed: {e}")
             self.client = None
             self.database = None

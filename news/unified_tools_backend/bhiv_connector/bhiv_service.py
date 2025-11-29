@@ -5,7 +5,7 @@ import asyncio
 import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from ..app.core.database import db_service
+from app.core.database import db_service
 
 class BHIVPushService:
     def __init__(self):
