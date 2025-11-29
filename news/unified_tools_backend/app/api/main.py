@@ -11,6 +11,9 @@ from ..agents.agent_registry import agent_registry
 from ..rl.feedback_service import rl_feedback_service
 from ..pipeline.automator import automator
 from ..bhiv_connector.bhiv_service import bhiv_service
+from ..unified_pipeline import unified_pipeline
+from ..scheduler import scheduler
+from ..queue_worker import background_queue
 
 # Pydantic models
 class NewsProcessingRequest(BaseModel):
@@ -29,6 +32,17 @@ class ChannelAvatarMatrixRequest(BaseModel):
     content: Dict[str, Any]
     channels: List[str] = ["news_channel_1", "news_channel_2", "news_channel_3"]
     avatars: List[str] = ["avatar_alice", "avatar_bob", "avatar_charlie"]
+
+class UnifiedPipelineRequest(BaseModel):
+    url: str
+    options: Optional[Dict[str, Any]] = {
+        "enable_bhiv_push": True,
+        "enable_audio": True,
+        "channels": ["news_channel_1"],
+        "avatars": ["avatar_alice"],
+        "voice": "default",
+        "force_correction": False
+    }
 
 # FastAPI app
 app = FastAPI(
@@ -54,6 +68,12 @@ async def startup_event():
 
     # Start WebSocket server in background
     asyncio.create_task(bhiv_service.start_websocket_server())
+
+    # Start background queue
+    await background_queue.start()
+
+    # Start scheduler
+    await scheduler.start()
 
 # Health check
 @app.get("/")
@@ -103,6 +123,21 @@ async def health_check():
         "sprint_status": "complete",
         "production_ready": True
     }
+
+# Unified Pipeline Endpoint (Production Ready)
+@app.post("/v1/run_pipeline")
+async def run_unified_pipeline(request: UnifiedPipelineRequest):
+    """Unified pipeline endpoint for complete News AI processing"""
+    try:
+        result = await unified_pipeline.run_full_pipeline(request.dict())
+
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Pipeline failed"))
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unified pipeline failed: {str(e)}")
 
 # Core processing endpoints
 @app.post("/api/process-news")
@@ -423,6 +458,70 @@ async def sample_validation():
             "results": results
         },
         "message": f"Sample validation: {successful}/{len(sample_urls)} successful",
+        "timestamp": datetime.now().isoformat()
+    }
+
+# Scheduler and Queue Management endpoints
+@app.post("/api/scheduler/start")
+async def start_scheduler():
+    """Start the news processing scheduler"""
+    await scheduler.start()
+    return {
+        "success": True,
+        "message": "Scheduler started",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/api/scheduler/stop")
+async def stop_scheduler():
+    """Stop the news processing scheduler"""
+    await scheduler.stop()
+    return {
+        "success": True,
+        "message": "Scheduler stopped",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/scheduler/stats")
+async def get_scheduler_stats():
+    """Get scheduler statistics and status"""
+    stats = await scheduler.get_scheduler_stats()
+    return {
+        "success": True,
+        "data": stats,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/api/scheduler/trigger")
+async def trigger_scheduler_run(category: Optional[str] = None, source_url: Optional[str] = None):
+    """Manually trigger scheduler run"""
+    result = await scheduler.trigger_manual_run(category, source_url)
+    return {
+        "success": True,
+        "data": result,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/queue/stats")
+async def get_queue_stats():
+    """Get background queue statistics"""
+    stats = await background_queue.get_queue_stats()
+    return {
+        "success": True,
+        "data": stats,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/queue/job/{job_id}")
+async def get_job_status(job_id: str):
+    """Get status of a specific background job"""
+    job_status = await background_queue.get_job_status(job_id)
+    if not job_status:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "success": True,
+        "data": job_status,
         "timestamp": datetime.now().isoformat()
     }
 

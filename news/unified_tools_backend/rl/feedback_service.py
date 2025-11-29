@@ -1,6 +1,9 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import asyncio
+import json
+import os
+from pathlib import Path
 from ..app.core.database import db_service
 from ..app.services.uniguru import uniguru_service
 from ..agents.agent_registry import agent_registry
@@ -10,8 +13,33 @@ class RLFeedbackService:
         self.reward_threshold = 0.6  # Minimum acceptable reward score
         self.max_correction_attempts = 3
 
+        # Adaptive reward scaling
+        self.adaptive_scaling = True
+        self.performance_history = []
+        self.scaling_factors = {
+            "tone_weight": 0.3,
+            "engagement_weight": 0.4,
+            "quality_weight": 0.3
+        }
+
+        # Logging configuration
+        self.logs_dir = Path("logs/rl")
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        self.metrics_file = self.logs_dir / "rl_metrics.jsonl"
+
+        # Performance tracking
+        self.session_stats = {
+            "total_evaluations": 0,
+            "mean_reward": 0.0,
+            "correction_rate": 0.0,
+            "avg_latency": 0.0,
+            "session_start": datetime.now().isoformat()
+        }
+
     async def calculate_reward(self, news_item: Dict[str, Any], script_output: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate comprehensive reward score for news processing output"""
+        """Calculate comprehensive reward score for news processing output with adaptive scaling"""
+        start_time = datetime.now()
+
         try:
             content = news_item.get("content", "")
             title = news_item.get("title", "")
@@ -23,11 +51,22 @@ class RLFeedbackService:
             engagement_score = await self._calculate_engagement_score(content, script, title)
             quality_score = await self._calculate_quality_score(content, authenticity_score, script_output)
 
-            # Overall reward (weighted average)
-            reward_score = (tone_score * 0.3) + (engagement_score * 0.4) + (quality_score * 0.3)
+            # Apply adaptive reward scaling
+            if self.adaptive_scaling:
+                weights = self._get_adaptive_weights()
+            else:
+                weights = self.scaling_factors
+
+            # Overall reward (weighted average with adaptive scaling)
+            reward_score = (tone_score * weights["tone_weight"]) + \
+                          (engagement_score * weights["engagement_weight"]) + \
+                          (quality_score * weights["quality_weight"])
 
             # Determine if correction is needed
             correction_needed = reward_score < self.reward_threshold
+
+            # Calculate latency
+            latency = (datetime.now() - start_time).total_seconds()
 
             feedback_data = {
                 "news_item_id": news_item.get("id", ""),
@@ -47,13 +86,31 @@ class RLFeedbackService:
                     "content_length": len(content.split()),
                     "script_length": len(script.split()) if script else 0,
                     "processing_timestamp": datetime.now().isoformat(),
-                    "reward_components": {
-                        "tone_weight": 0.3,
-                        "engagement_weight": 0.4,
-                        "quality_weight": 0.3
-                    }
+                    "latency_seconds": round(latency, 3),
+                    "reward_components": weights
+                },
+                "adaptive_scaling": {
+                    "enabled": self.adaptive_scaling,
+                    "performance_history_size": len(self.performance_history)
                 }
             }
+
+            # Update performance history for adaptive scaling
+            self.performance_history.append({
+                "reward_score": reward_score,
+                "timestamp": datetime.now().isoformat(),
+                "correction_needed": correction_needed
+            })
+
+            # Keep only last 100 evaluations for adaptive scaling
+            if len(self.performance_history) > 100:
+                self.performance_history = self.performance_history[-100:]
+
+            # Update session statistics
+            self._update_session_stats(reward_score, correction_needed, latency)
+
+            # Auto-log RL event
+            await self._log_rl_event(feedback_data)
 
             # Save feedback to database
             if db_service.database:
@@ -332,6 +389,206 @@ class RLFeedbackService:
 
         except Exception as e:
             return {"error": f"Metrics retrieval failed: {str(e)}"}
+
+    def _get_adaptive_weights(self) -> Dict[str, float]:
+        """Calculate adaptive weights based on performance history"""
+        if len(self.performance_history) < 10:
+            return self.scaling_factors  # Not enough data, use defaults
+
+        # Analyze recent performance to adjust weights
+        recent_scores = [p["reward_score"] for p in self.performance_history[-20:]]
+        avg_recent_reward = sum(recent_scores) / len(recent_scores)
+
+        # If recent performance is good, emphasize quality
+        # If recent performance needs improvement, emphasize engagement
+        if avg_recent_reward > 0.7:
+            # High performance: focus on maintaining quality
+            return {
+                "tone_weight": 0.25,
+                "engagement_weight": 0.35,
+                "quality_weight": 0.4
+            }
+        elif avg_recent_reward < 0.5:
+            # Low performance: boost engagement to improve scores
+            return {
+                "tone_weight": 0.2,
+                "engagement_weight": 0.5,
+                "quality_weight": 0.3
+            }
+        else:
+            # Medium performance: balanced approach
+            return self.scaling_factors
+
+    def _update_session_stats(self, reward_score: float, correction_needed: bool, latency: float):
+        """Update session statistics"""
+        self.session_stats["total_evaluations"] += 1
+
+        # Rolling average for mean reward
+        current_count = self.session_stats["total_evaluations"]
+        current_mean = self.session_stats["mean_reward"]
+        self.session_stats["mean_reward"] = (current_mean * (current_count - 1) + reward_score) / current_count
+
+        # Update correction rate
+        corrections = sum(1 for p in self.performance_history if p["correction_needed"])
+        self.session_stats["correction_rate"] = corrections / len(self.performance_history) if self.performance_history else 0
+
+        # Update average latency
+        current_latency_avg = self.session_stats["avg_latency"]
+        self.session_stats["avg_latency"] = (current_latency_avg * (current_count - 1) + latency) / current_count
+
+    async def _log_rl_event(self, feedback_data: Dict[str, Any]):
+        """Log RL event to JSONL file"""
+        try:
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "event_type": "rl_evaluation",
+                "data": feedback_data,
+                "session_stats": self.session_stats.copy()
+            }
+
+            with open(self.metrics_file, 'a', encoding='utf-8') as f:
+                json.dump(log_entry, f, ensure_ascii=False)
+                f.write('\n')
+
+        except Exception as e:
+            print(f"Failed to log RL event: {e}")
+
+    async def generate_test_dataset(self, num_cases: int = 10) -> List[Dict[str, Any]]:
+        """Generate a test dataset for RL improvements testing"""
+        test_cases = []
+
+        # Sample news content templates
+        news_templates = [
+            {
+                "title": "Breaking: Major Tech Breakthrough Announced",
+                "content": "A revolutionary new technology has been announced today that promises to change the way we live. Scientists have developed an innovative solution that addresses long-standing challenges in the field. The breakthrough comes after years of research and development.",
+                "authenticity_score": 85,
+                "expected_quality": "high"
+            },
+            {
+                "title": "Local Event Draws Small Crowd",
+                "content": "A community event took place yesterday with limited attendance. The organizers had hoped for more participation but weather conditions may have affected turnout. The event featured local vendors and entertainment.",
+                "authenticity_score": 60,
+                "expected_quality": "medium"
+            },
+            {
+                "title": "URGENT: Crisis Situation Developing",
+                "content": "EMERGENCY ALERT: A serious situation is unfolding that requires immediate attention. Authorities are responding to reports of unusual activity. Stay tuned for updates as more information becomes available.",
+                "authenticity_score": 75,
+                "expected_quality": "high_engagement"
+            },
+            {
+                "title": "New Study Shows Interesting Results",
+                "content": "Researchers have published findings from a recent study. The results indicate some trends that may be worth noting. Further research is needed to confirm these observations.",
+                "authenticity_score": 70,
+                "expected_quality": "medium"
+            },
+            {
+                "title": "Celebrity Makes Surprise Announcement",
+                "content": "In a shocking turn of events, a famous celebrity has made a major life decision. Fans around the world are reacting to the news with mixed emotions. Social media is buzzing with reactions and speculation.",
+                "authenticity_score": 55,
+                "expected_quality": "high_engagement"
+            }
+        ]
+
+        for i in range(num_cases):
+            # Select template based on case number
+            template = news_templates[i % len(news_templates)]
+
+            # Generate script output (simulated)
+            script_output = {
+                "video_script": f"Today we're covering: {template['title']}. {template['content'][:100]}... Stay tuned for more updates.",
+                "tone": "neutral",
+                "language": "en"
+            }
+
+            test_case = {
+                "case_id": f"test_case_{i+1}",
+                "news_item": {
+                    "id": f"test_news_{i+1}",
+                    "title": template["title"],
+                    "content": template["content"],
+                    "authenticity_score": template["authenticity_score"]
+                },
+                "script_output": script_output,
+                "expected_category": template["expected_quality"],
+                "generated_at": datetime.now().isoformat()
+            }
+
+            test_cases.append(test_case)
+
+        return test_cases
+
+    async def run_rl_test_suite(self, test_cases: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Run RL evaluation on test dataset and return comprehensive results"""
+        results = []
+        start_time = datetime.now()
+
+        for test_case in test_cases:
+            try:
+                feedback = await self.calculate_reward(
+                    test_case["news_item"],
+                    test_case["script_output"]
+                )
+
+                result = {
+                    "case_id": test_case["case_id"],
+                    "expected_category": test_case["expected_category"],
+                    "actual_reward": feedback["reward_score"],
+                    "tone_score": feedback["tone_score"],
+                    "engagement_score": feedback["engagement_score"],
+                    "quality_score": feedback["quality_score"],
+                    "correction_needed": feedback["correction_needed"],
+                    "latency": feedback["metrics"]["latency_seconds"]
+                }
+
+                results.append(result)
+
+            except Exception as e:
+                results.append({
+                    "case_id": test_case["case_id"],
+                    "error": str(e),
+                    "expected_category": test_case["expected_category"]
+                })
+
+        # Calculate aggregate metrics
+        successful_results = [r for r in results if "actual_reward" in r]
+
+        if successful_results:
+            avg_reward = sum(r["actual_reward"] for r in successful_results) / len(successful_results)
+            avg_latency = sum(r["latency"] for r in successful_results) / len(successful_results)
+            correction_rate = sum(1 for r in successful_results if r["correction_needed"]) / len(successful_results)
+
+            # Category performance
+            category_performance = {}
+            for result in successful_results:
+                cat = result["expected_category"]
+                if cat not in category_performance:
+                    category_performance[cat] = []
+                category_performance[cat].append(result["actual_reward"])
+
+            for cat in category_performance:
+                category_performance[cat] = {
+                    "avg_reward": sum(category_performance[cat]) / len(category_performance[cat]),
+                    "count": len(category_performance[cat])
+                }
+        else:
+            avg_reward = avg_latency = correction_rate = 0
+            category_performance = {}
+
+        return {
+            "test_summary": {
+                "total_cases": len(test_cases),
+                "successful_evaluations": len(successful_results),
+                "avg_reward": round(avg_reward, 3),
+                "avg_latency": round(avg_latency, 3),
+                "correction_rate": round(correction_rate, 3)
+            },
+            "category_performance": category_performance,
+            "detailed_results": results,
+            "test_duration": (datetime.now() - start_time).total_seconds(),
+            "generated_at": datetime.now().isoformat()
+        }
 
 # Global instance
 rl_feedback_service = RLFeedbackService()
