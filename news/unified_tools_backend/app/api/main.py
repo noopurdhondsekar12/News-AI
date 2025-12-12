@@ -525,6 +525,189 @@ async def get_job_status(job_id: str):
         "timestamp": datetime.now().isoformat()
     }
 
+# Legacy testing endpoints for frontend compatibility
+@app.post("/api/scrape")
+async def scrape_website(request: Dict[str, Any]):
+    """Legacy scraping endpoint for testing"""
+    url = request.get("url")
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    try:
+        # Use the automator for basic scraping
+        result = await automator.process_news_url(url)
+        return {
+            "success": result.get("success", False),
+            "data": result,
+            "message": "Website scraped successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scraping failed: {str(e)}")
+
+@app.post("/api/vet")
+async def vet_content(request: Dict[str, Any]):
+    """Legacy content vetting endpoint for testing"""
+    data = request.get("data", {})
+    criteria = request.get("criteria", {})
+
+    if not data:
+        raise HTTPException(status_code=400, detail="Data is required")
+
+    try:
+        # Use RL feedback service for vetting
+        feedback = await rl_feedback_service.calculate_reward(data, {})
+        return {
+            "success": True,
+            "data": {
+                "vetting_result": feedback,
+                "criteria_applied": criteria,
+                "authenticity_score": feedback.get("reward", 0)
+            },
+            "message": "Content vetted successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Vetting failed: {str(e)}")
+
+@app.post("/api/summarize")
+async def summarize_content(request: Dict[str, Any]):
+    """Legacy summarization endpoint for testing"""
+    text = request.get("text", "")
+    max_length = request.get("max_length", 150)
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    try:
+        # Use Uniguru service for summarization
+        result = await uniguru_service.summarize_text(text, max_length)
+        return {
+            "success": result.get("success", False),
+            "data": result,
+            "message": "Text summarized successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
+
+@app.post("/api/prompt")
+async def generate_prompt(request: Dict[str, Any]):
+    """Legacy prompt generation endpoint for testing"""
+    task_data = request
+
+    if not task_data:
+        raise HTTPException(status_code=400, detail="Task data is required")
+
+    try:
+        # Use agent registry for prompt generation
+        agent_id = "content_creator"  # Use content creator agent
+        task_id = await agent_registry.submit_task(agent_id, task_data)
+
+        if not task_id:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+
+        # Wait for task completion (simple implementation)
+        await asyncio.sleep(2)  # Brief wait
+        task_result = await db_service.get_agent_task(task_id)
+
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "prompt_generated": task_result.get("result", {}) if task_result else {},
+                "task_data": task_data
+            },
+            "message": "Prompt generated successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prompt generation failed: {str(e)}")
+
+@app.post("/api/video-search")
+async def search_videos(request: Dict[str, Any]):
+    """Legacy video search endpoint for testing"""
+    query = request.get("query", "")
+    max_results = request.get("max_results", 5)
+    sources = request.get("sources", ["youtube"])
+
+    if not query:
+        raise HTTPException(status_code=400, detail="Query is required")
+
+    try:
+        # Use agent registry for video search
+        agent_id = "video_search"
+        task_data = {
+            "query": query,
+            "max_results": max_results,
+            "sources": sources
+        }
+
+        task_id = await agent_registry.submit_task(agent_id, task_data)
+
+        if not task_id:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+
+        # Wait for task completion
+        await asyncio.sleep(2)
+        task_result = await db_service.get_agent_task(task_id)
+
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "videos_found": task_result.get("result", []) if task_result else [],
+                "query": query,
+                "max_results": max_results
+            },
+            "message": f"Found videos for query: {query}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Video search failed: {str(e)}")
+
+@app.post("/api/validate-video")
+async def validate_video(request: Dict[str, Any]):
+    """Legacy video validation endpoint for testing"""
+    video_id = request.get("video_id")
+    video_url = request.get("video_url")
+
+    if not video_id and not video_url:
+        raise HTTPException(status_code=400, detail="Either video_id or video_url is required")
+
+    try:
+        # Simple validation - check if URL is accessible
+        import aiohttp
+
+        url_to_check = video_url or f"https://www.youtube.com/watch?v={video_id}"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.head(url_to_check) as response:
+                is_valid = response.status == 200
+
+        return {
+            "success": True,
+            "data": {
+                "video_id": video_id,
+                "video_url": video_url,
+                "is_valid": is_valid,
+                "validation_method": "http_head_check"
+            },
+            "message": f"Video validation completed: {'Valid' if is_valid else 'Invalid'}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Video validation failed: {str(e)}",
+            "data": {
+                "video_id": video_id,
+                "video_url": video_url,
+                "is_valid": False
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
