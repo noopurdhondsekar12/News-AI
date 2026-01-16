@@ -244,52 +244,41 @@ class UnifiedPipeline:
         }
 
     def _compile_final_response(self, news_data: Dict[str, Any], bhiv_result: Dict[str, Any],
-                               audio_result: Dict[str, Any], start_time: datetime) -> Dict[str, Any]:
-        """Compile final response for frontend consumption"""
+                                audio_result: Dict[str, Any], start_time: datetime) -> Dict[str, Any]:
+        """Compile final response aligned to orchestration contract schema"""
         processing_time = (datetime.now() - start_time).total_seconds()
+
+        # Extract sentiment score from sentiment_analysis if it's a dict
+        sentiment_score = news_data.get("sentiment_analysis", {}).get("score", 0.0) if isinstance(news_data.get("sentiment_analysis"), dict) else news_data.get("sentiment", 0.0)
 
         return {
             "success": True,
-            "pipeline": "unified_v1",
             "data": {
                 "news_item": {
-                    "title": news_data.get("title", ""),
-                    "content": news_data.get("content", ""),
-                    "summary": news_data.get("summary", ""),
-                    "categories": news_data.get("categories", []),
-                    "sentiment": news_data.get("sentiment_analysis", {}),
-                    "authenticity_score": news_data.get("authenticity_score", 0)
+                    "title": news_data.get("title") or None,
+                    "content": news_data.get("content") or None,
+                    "summary": news_data.get("summary") or None,
+                    "category": news_data.get("category") or news_data.get("categories", [None])[0] if news_data.get("categories") else None,
+                    "sentiment": sentiment_score,
+                    "authenticity_score": news_data.get("authenticity_score", 0.0)
                 },
                 "script": {
-                    "video_prompt": news_data.get("script_data", {}).get("video_script", ""),
-                    "tone": news_data.get("script_data", {}).get("tone", "neutral"),
-                    "language": news_data.get("script_data", {}).get("language", "en"),
+                    "video_prompt": news_data.get("script_data", {}).get("video_script") or None,
+                    "tone": news_data.get("script_data", {}).get("tone") or None,
+                    "language": news_data.get("script_data", {}).get("language") or None,
                     "avatar_ready": news_data.get("validation_flags", {}).get("avatar_ready", False)
                 },
                 "rl_feedback": {
-                    "reward_score": news_data.get("rl_feedback", {}).get("reward_score", 0),
-                    "quality_gate_passed": news_data.get("rl_feedback", {}).get("reward_score", 0) >= 0.6,
+                    "reward_score": news_data.get("rl_feedback", {}).get("reward_score", 0.0),
+                    "quality_gate_passed": news_data.get("rl_feedback", {}).get("reward_score", 0.0) >= 0.6,
                     "corrections_applied": news_data.get("corrections_applied", 0)
-                },
-                "bhiv_push": {
-                    "successful": bhiv_result.get("success", False),
-                    "channels": bhiv_result.get("channels", []),
-                    "successful_pushes": bhiv_result.get("data", {}).get("successful_pushes", 0)
-                },
-                "audio": {
-                    "generated": audio_result.get("success", False),
-                    "audio_url": audio_result.get("audio_url"),
-                    "duration": audio_result.get("duration"),
-                    "voice": audio_result.get("voice_used")
                 }
             },
-            "processing_metrics": {
-                "total_time": processing_time,
-                "pipeline_version": "v1.0",
-                "components_used": ["automator", "rl", "bhiv", "audio"]
+            "bhiv_push": {
+                "channels": bhiv_result.get("channels", []),
+                "successful_pushes": bhiv_result.get("data", {}).get("successful_pushes", 0)
             },
-            "timestamp": datetime.now().isoformat(),
-            "preview_ready": True
+            "timestamp": datetime.now().isoformat()
         }
 
     def _create_error_response(self, error_msg: str, partial_data: Dict[str, Any]) -> Dict[str, Any]:

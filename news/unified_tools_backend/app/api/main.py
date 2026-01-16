@@ -156,10 +156,34 @@ async def process_news(request: NewsProcessingRequest, background_tasks: Backgro
                 result
             )
 
+        # Align response to orchestration contract schema
         return {
             "success": result.get("success", False),
-            "data": result,
-            "message": "News processing completed",
+            "data": {
+                "news_item": {
+                    "title": result.get("title") or None,
+                    "content": result.get("content") or None,
+                    "summary": result.get("summary") or None,
+                    "category": result.get("category") or None,
+                    "sentiment": result.get("sentiment", 0.0),
+                    "authenticity_score": result.get("authenticity_score", 0.0)
+                },
+                "script": {
+                    "video_prompt": result.get("script_data", {}).get("video_script") or None,
+                    "tone": result.get("script_data", {}).get("tone") or None,
+                    "language": result.get("script_data", {}).get("language") or None,
+                    "avatar_ready": result.get("script_data", {}).get("avatar_ready", False)
+                },
+                "rl_feedback": {
+                    "reward_score": result.get("rl_feedback", {}).get("reward_score", 0.0),
+                    "quality_gate_passed": result.get("rl_feedback", {}).get("reward_score", 0.0) >= 0.6,
+                    "corrections_applied": result.get("corrections_applied", 0)
+                }
+            },
+            "bhiv_push": {
+                "channels": result.get("bhiv_push", {}).get("channels", []),
+                "successful_pushes": result.get("bhiv_push", {}).get("successful_pushes", 0)
+            },
             "timestamp": datetime.now().isoformat()
         }
 
