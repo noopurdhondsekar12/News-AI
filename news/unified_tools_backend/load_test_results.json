@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-01-19T22:32:10.773287",
+  "test_config": {
+    "concurrent_requests": 3,
+    "requests_per_url": 2,
+    "total_urls": 5,
+    "base_url": "http://localhost:8000"
+  },
+  "performance_metrics": {
+    "total_requests": 10,
+    "successful_requests": 0,
+    "failed_requests": 10,
+    "total_time_seconds": 0.01284933090209961,
+    "average_latency_seconds": 0,
+    "throughput_requests_per_second": 778.2506401454707
+  },
+  "individual_results": [
+    {
+      "request_id": 0,
+      "url": "https://www.bbc.com/news",
+      "success": false,
+      "latency": 0.0074770450592041016,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 1,
+      "url": "https://www.bbc.com/news",
+      "success": false,
+      "latency": 0.0049839019775390625,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 2,
+      "url": "https://www.reuters.com/",
+      "success": false,
+      "latency": 0.0041348934173583984,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 3,
+      "url": "https://www.reuters.com/",
+      "success": false,
+      "latency": 0.001978158950805664,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 4,
+      "url": "https://www.nytimes.com/",
+      "success": false,
+      "latency": 0.001961946487426758,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 5,
+      "url": "https://www.nytimes.com/",
+      "success": false,
+      "latency": 0.0021941661834716797,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 6,
+      "url": "https://www.theguardian.com/international",
+      "success": false,
+      "latency": 0.0019199848175048828,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 7,
+      "url": "https://www.theguardian.com/international",
+      "success": false,
+      "latency": 0.002117156982421875,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 8,
+      "url": "https://www.aljazeera.com/",
+      "success": false,
+      "latency": 0.0017268657684326172,
+      "error": "All connection attempts failed"
+    },
+    {
+      "request_id": 9,
+      "url": "https://www.aljazeera.com/",
+      "success": false,
+      "latency": 0.0012447834014892578,
+      "error": "All connection attempts failed"
+    }
+  ]
+}
