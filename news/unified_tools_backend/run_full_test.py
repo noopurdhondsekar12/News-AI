@@ -8,11 +8,13 @@ import asyncio
 import httpx
 import json
 import time
+import os
 from datetime import datetime
 from pathlib import Path
 
-# Test configuration
-BASE_URL = "http://localhost:8000"  # Change to production URL when deployed
+# Test configuration - Environment-aware
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 TEST_NEWS_URLS = [
     "https://www.bbc.com/news",
     "https://www.reuters.com/",
@@ -337,6 +339,8 @@ class NewsAITestSuite:
 async def main():
     """Main test execution"""
     print("🧪 News AI Production System - Final QA Test Suite")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
     print("Testing complete integration: Backend + Seeya + Sankalp + Chandragupta")
     print("=" * 80)
 

@@ -5,16 +5,23 @@ Test Blackhole LLM Integration
 
 import requests
 import json
+import os
 
 def test_blackhole_llm():
     """Test the Blackhole LLM configuration"""
-    
+
+    # Environment-aware configuration
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
     print("🧪 Testing Blackhole LLM Integration")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
     print("=" * 50)
     
     # Test health endpoint
     try:
-        response = requests.get("http://localhost:8000/health")
+        response = requests.get(f"{BASE_URL}/health")
         if response.status_code == 200:
             health_data = response.json()
             print("✅ Backend Health Check:")
@@ -35,7 +42,7 @@ def test_blackhole_llm():
             """
             
             summarize_response = requests.post(
-                "http://localhost:8000/api/summarize",
+                f"{BASE_URL}/api/summarize",
                 json={
                     "text": test_text,
                     "max_length": 100,

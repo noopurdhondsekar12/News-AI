@@ -8,11 +8,13 @@ import asyncio
 import httpx
 import json
 import time
+import os
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Test configuration
-BASE_URL = "http://localhost:8000"
+# Test configuration - Environment-aware
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 TEST_URLS = [
     "https://www.bbc.com/news",
     "https://www.reuters.com/",
@@ -74,6 +76,8 @@ async def single_request(client: httpx.AsyncClient, url: str, request_id: int) -
 async def run_load_test():
     """Run the load test"""
     print("🚀 Starting Light Load Test for News AI Backend")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
     print(f"Concurrent requests: {CONCURRENT_REQUESTS}")
     print(f"Requests per URL: {REQUESTS_PER_URL}")
     print(f"Total URLs: {len(TEST_URLS)}")

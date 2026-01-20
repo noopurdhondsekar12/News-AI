@@ -9,7 +9,10 @@ from app.services.uniguru import UniguruService
 
 async def test_uniguru_fallback():
     """Test Uniguru fallback mechanisms"""
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
     print("🧪 Testing Uniguru Fallback Behavior")
+    print(f"Environment: {ENVIRONMENT}")
     print("=" * 50)
 
     # Create service instance

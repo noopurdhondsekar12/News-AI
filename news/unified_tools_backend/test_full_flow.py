@@ -8,10 +8,12 @@ import asyncio
 import httpx
 import json
 import time
+import os
 from datetime import datetime
 
-# Test configuration
-BASE_URL = "http://localhost:8000"
+# Test configuration - Environment-aware
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 TEST_URLS = [
     "https://www.bbc.com/news",
     "https://www.reuters.com/",
@@ -46,6 +48,8 @@ async def test_component(client, endpoint, data, component_name):
 async def run_full_test():
     """Run complete system test"""
     print("🚀 Starting News AI Backend Full Flow Test")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
     print("=" * 60)
 
     async with httpx.AsyncClient(timeout=30.0) as client:

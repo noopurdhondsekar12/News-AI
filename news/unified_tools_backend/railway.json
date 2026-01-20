@@ -15,14 +15,16 @@
       "variables": {
         "ENVIRONMENT": "production",
         "LOG_LEVEL": "INFO",
-        "MONGODB_DATABASE": "news_ai_prod"
+        "MONGODB_DATABASE": "news_ai_prod",
+        "TEST_BASE_URL": "https://api.news-ai.com"
       }
     },
     "staging": {
       "variables": {
         "ENVIRONMENT": "staging",
         "LOG_LEVEL": "DEBUG",
-        "MONGODB_DATABASE": "news_ai_staging"
+        "MONGODB_DATABASE": "news_ai_staging",
+        "TEST_BASE_URL": "https://news-ai-backend-staging.up.railway.app"
       }
     }
   }

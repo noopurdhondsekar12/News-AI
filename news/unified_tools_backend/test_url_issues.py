@@ -5,11 +5,18 @@ URL Issue Analysis and Solutions
 
 import requests
 import json
+import os
 
 def test_url_issues():
     """Test and analyze the URL issues reported by the user"""
-    
+
+    # Environment-aware configuration
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
     print("🔍 NEWS AI - URL ISSUE ANALYSIS")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
     print("=" * 50)
     
     # Test URLs
@@ -39,7 +46,7 @@ def test_url_issues():
         # Test validation first
         try:
             validation_response = requests.post(
-                "http://localhost:8000/api/validate-url",
+                f"{BASE_URL}/api/validate-url",
                 json={"url": test_case['url']}
             )
             
@@ -56,7 +63,7 @@ def test_url_issues():
                     
             # Test scraping
             scrape_response = requests.post(
-                "http://localhost:8000/api/scrape", 
+                f"{BASE_URL}/api/scrape",
                 json={"url": test_case['url']}
             )
             

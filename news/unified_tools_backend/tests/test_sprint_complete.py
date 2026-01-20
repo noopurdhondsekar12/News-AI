@@ -8,11 +8,13 @@ import asyncio
 import httpx
 import json
 import time
+import os
 from datetime import datetime
 from typing import Dict, List, Any
 
-# Test configuration
-BASE_URL = "http://localhost:8000"
+# Test configuration - Environment-aware
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 TEST_TIMEOUT = 30.0
 
 # Test data
@@ -532,6 +534,10 @@ class SprintTestSuite:
 
 async def main():
     """Main test runner"""
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Base URL: {BASE_URL}")
+    print()
+
     async with SprintTestSuite() as test_suite:
         results = await test_suite.run_complete_test_suite()
 
