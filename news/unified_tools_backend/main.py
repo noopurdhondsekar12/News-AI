@@ -6271,13 +6271,21 @@ async def get_sample_integration():
 # Health check
 @app.get("/health")
 async def health_check():
-    return {
+    health_data = {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "services": {
             "scraping": True,
             "summarizing": bool(BLACKHOLE_LLM_URL) or bool(GROK_API_KEY) or bool(OPENAI_API_KEY) or bool(OLLAMA_BASE_URL),
             "summarizing_via": "blackhole-llm" if BLACKHOLE_LLM_URL else ("grok" if GROK_API_KEY else ("ollama" if OLLAMA_BASE_URL else ("openai" if OPENAI_API_KEY else "heuristic"))),
+        }
+    }
+    return UnifiedResponse(
+        success=True,
+        data=health_data,
+        message="Health check completed",
+        timestamp=datetime.now().isoformat()
+    )
             "blackhole_llm": bool(BLACKHOLE_LLM_URL),
             "blackhole_llm_url": BLACKHOLE_LLM_URL if BLACKHOLE_LLM_URL else None,
             "blackhole_llm_model": BLACKHOLE_LLM_MODEL if BLACKHOLE_LLM_URL else None,
